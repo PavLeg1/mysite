@@ -2,6 +2,9 @@ from django.shortcuts import render, get_object_or_404
 from .models import Post
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
+from .forms import EmailPostForm
+from django.core.mail import send_mail
+
 
 def post_list(request):
     post_list = Post.published.all()
@@ -42,6 +45,45 @@ def post_detail(request, year, month, day, post):
     return render(request,
                   'blog/post/detail.html',
                   {'post': post})
+
+# Представление для отправки поста получая доступ к посту через его id используя функцию get_object_or_404()
+def post_share(request, post_id):
+    # Извлечь пост по id
+    post = get_object_or_404(Post,
+                             id=post_id,
+                             status=Post.Status.PUBLISHED)
+    
+    # Еще не было отправлено
+    sent = False
+    
+    
+    if request.method == 'POST':
+        # Форма была передана на обработку с данными из request.POST
+        form = EmailPostForm(request.POST)
+        if form.is_valid():
+            # Поля формы успешно прошли валидацию
+            cd = form.cleaned_data
+
+            # Получаем путь до поста чтобы его отправить
+            post_url = request.build_absolute_uri(post.get_absolute_url())
+            
+            # Тема письма
+            subject = f"{cd['name']} recommends you to read {post.title}"
+            
+            # Текст письма с комментом (если есть) 
+            message = f"Read {post.title} at {post_url}\n\n\
+                {cd['name']} comments: {cd['comments']}"
+            send_mail(subject, message, 'your@gmail.com', [cd['to']])
+
+            # Письмо отправлено
+            sent = True 
+    else:
+        # Отображение пустой формы если метод "GET"
+        form = EmailPostForm()
+    return render(request, 'blog/post/share.html', {'post': post,
+                                                    'form': form,
+                                                    'sent': sent})
+
 
 
 class PostListView(ListView):
