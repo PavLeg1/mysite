@@ -73,7 +73,7 @@ def post_share(request, post_id):
             # Текст письма с комментом (если есть) 
             message = f"Read {post.title} at {post_url}\n\n\
                 {cd['name']} comments: {cd['comments']}"
-            send_mail(subject, message, 'your@gmail.com', [cd['to']])
+            send_mail(subject, message, 'zxc@gmail.com', [cd['to']])
 
             # Письмо отправлено
             sent = True 
