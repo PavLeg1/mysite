@@ -1,9 +1,10 @@
 from django.shortcuts import render, get_object_or_404
-from .models import Post
+from .models import Post, Comment
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
-from .forms import EmailPostForm
+from .forms import EmailPostForm, CommentForm
 from django.core.mail import send_mail
+from django.views.decorators.http import require_POST
 
 
 def post_list(request):
@@ -42,9 +43,17 @@ def post_detail(request, year, month, day, post):
                              publish__year=year,
                              publish__month=month,
                              publish__day=day)
+    # Список активных комментариев к посту:
+    # Добавлен набор запросов QuerySet чтобы извлекать все активные комментарии к посту
+    comments = post.comments.filter(active=True)
+    # Форма для комментирования пользователями
+    form = CommentForm()
+
     return render(request,
                   'blog/post/detail.html',
-                  {'post': post})
+                  {'post': post,
+                   'comments': comments,
+                   'form': form})
 
 # Представление для отправки поста получая доступ к посту через его id используя функцию get_object_or_404()
 def post_share(request, post_id):
@@ -85,9 +94,34 @@ def post_share(request, post_id):
                                                     'sent': sent})
 
 
-
 class PostListView(ListView):
     queryset = Post.published.all() # Используется для того, чтобы иметь конкретно-прикладной набор запросов QuerySet, не извлекая все объекты
     context_object_name = 'posts'   # 'posts' используется для результатов запроса. Если в context_object_name ничего не указано, по умолчанию object_list 
     paginate_by = 3                 # В данном атрибуте задается постраничная разбивка результатов с возвратом трех объектов на страницу    
     template_name = 'blog/post/list.html' # Конкретно-прикладной шаблон используется для прорисовки страницы шаблоном template_name     
+
+
+# Представление управляющее передачей поста на обработку через POST
+# Декоратор @require_POST разрешает запросы через POST только для этого представления
+# При запросах через другие методы --> ошибка 405
+@require_POST
+def post_comment(request, post_id):
+    post = get_object_or_404(Post,
+                             id=post_id,
+                             status=Post.Status.PUBLISHED)
+    # Переменная для хранения комментария при его создании
+    comment = None
+    # Комментарий был отправлен
+    form = CommentForm(data=request.POST)
+    if form.is_valid():
+        # Создать объект класса Comment, не сохраняя его в базу данных (метод save())
+        # save() недоступен для экземпляров Form, так как они не привязаны к конкретной модели 
+        comment = form.save(commit=False)
+        # Назначить пост комментария
+        comment.post = post
+        # Сохранить комментарий в БД
+        comment.save()
+    return render(request, 'blog/post/comment.html',
+                  {'post': post,
+                   'form': form,
+                   'comment': comment})

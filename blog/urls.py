@@ -19,6 +19,8 @@ urlpatterns = [
     # url в строке теперь выглядит как год поста/месяц поста/день поста/слаг к посту
     path('<int:year>/<int:month>/<int:day>/<slug:post>', views.post_detail, name='post_detail'),
     path('<int:post_id>/share/', views.post_share, name='post_share'),
+    # Представление для комментария к посту
+    path('<int:post_id>/comment/', views.post_comment, name='post_comment')
 ]
 
 # Создание файла urls.py для каждого приложения - лучший способ сделать приложения пригодными для реиспользования в других проектах

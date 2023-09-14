@@ -1,4 +1,6 @@
 from django import forms 
+from .models import Comment
+
 
 class EmailPostForm(forms.Form):
     # name - экземпляр класса CharField с макс. длинной=25 для имени отправителя поста    
@@ -16,3 +18,8 @@ class EmailPostForm(forms.Form):
     comments = forms.CharField(required=False,
                                widget=forms.Textarea)
     
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comment
+        fields = ['name', 'email', 'body']

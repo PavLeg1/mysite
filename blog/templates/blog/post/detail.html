@@ -13,5 +13,23 @@
     Share this post
     </a>
 </p>
+    {% with comments.count as total_comments %}                   <!-- With позволяет избегать многократного обращения к БД -->
+    <h2>
+        {{ total_comments }} comment{{ total_comments|pluralize }} <!-- Шаблонный фильтр pluralize отображает суффикс множественного числа
+                                                                       для comment (== comments) в зависимости от значения total_comments -->
+    </h2>
+    {% endwith %}
+    {% for comment in comments %}                                 <!-- Добавили for для прокручивания комментов к посту, если нет комментов - выводим сообщение -->
+    <div class="comment">
+        <p class="info">
+            Comment {{ forloop.counter }} by {{ comment.name }}
+            {{ comment.created }}
+        </p>
+        {{ comment.body|linebreaks }}
+    </div>
+    {% empty %}
+    <p>There are no comments.</p>
+    {% endfor %}
+    {% include "blog/post/includes/comment_form.html" %}
 {% endblock %}
   

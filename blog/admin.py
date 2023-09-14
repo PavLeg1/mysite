@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Post
+from .models import Post, Comment
 
 
 
@@ -24,4 +24,9 @@ class PostAdmin(admin.ModelAdmin):
     # Посты упорядочены по столбцам "статус" и "дата публикации"
     ordering = ['status', 'publish']
 
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ['name', 'email', 'post', 'created', 'active']
+    list_filter = ['active', 'created', 'updated']
+    search_fields = ['name', 'email', 'body']
 
