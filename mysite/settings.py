@@ -27,6 +27,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# При управлении несколькими сайтами через один джанго проект указываем это как первый
+SITE_ID = 1
 
 # Application definition
 
@@ -39,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'blog.apps.BlogConfig',
     'taggit',
+    'django.contrib.sites',     # Дорожная карта сайта 
+    'django.contrib.sitemaps',  #
 ]
 
 MIDDLEWARE = [
@@ -129,8 +133,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # EMAIL INFO
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'mail@gmail.com'
-EMAIL_HOST_PASSWORD = '***********'
+EMAIL_HOST_USER = 'pvlegostaev@gmail.com'
+EMAIL_HOST_PASSWORD = 'xxxxxxxxxxxxx'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 

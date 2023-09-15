@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .feeds import LatestPostsFeed
 
 # Определяем именное пространство приложения
 # Это позволяет упорядочивать URL-адреса по приложениям и при обращении к ним использовать имя
@@ -21,6 +22,7 @@ urlpatterns = [
     path('<int:post_id>/share/', views.post_share, name='post_share'),
     # Представление для комментария к посту
     path('<int:post_id>/comment/', views.post_comment, name='post_comment'),
+    path('feed/', LatestPostsFeed(), name='post_feed')
 
 ]
 
