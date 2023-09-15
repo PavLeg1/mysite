@@ -5,10 +5,18 @@ from django.views.generic import ListView
 from .forms import EmailPostForm, CommentForm
 from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
+from taggit.models import Tag 
+from django.db.models import Count # Подсчет общего количества объектов
 
 
-def post_list(request):
+def post_list(request, tag_slug=None):
     post_list = Post.published.all()
+    tag=None
+    # Внутри этого представления формируется набор запросов, извлекающий все опубликованные посты, если имеется слаг этого тега - берется объект Tag с данным слагом
+    if tag_slug:
+        tag = get_object_or_404(Tag, slug=tag_slug)
+        post_list = post_list.filter(tags__in=[tag]) # Операция __in - поиск по полю
+
     # Постраничная разбивка с 3 постами на страницу
     # Создаем экземпляр класса Paginator с числом объектов на странице (у нас это по три поста на странице)
     paginator = Paginator(post_list, 3)
@@ -25,10 +33,11 @@ def post_list(request):
         # Если page_number вне диапазона - выдаем последнюю страницу
         posts = paginator.page(paginator.num_pages)
 
-    # Передаем номер страницы и объект posts в шаблон
+    # Передаем номер страницы, объект posts и теги tag в шаблон
     return render(request,
                   'blog/post/list.html',
-                  {'posts': posts})
+                  {'posts': posts,
+                   'tags': tag})
 
 
 def post_detail(request, year, month, day, post):
@@ -49,11 +58,20 @@ def post_detail(request, year, month, day, post):
     # Форма для комментирования пользователями
     form = CommentForm()
 
+    # Список схожих постов
+    # values_list возвращает кортежи со значениями заданных полей. Если передается flat=True передаются одиночные значения [1, 2, 3] вместо [(1,), (2,), (3,)]
+    # Далее берутся все посты с этими тегами, кроме текущего, применяется Count. Генерирует поле same_tags содержащее кол-во общих тегов
+    # Результат упорядочивается по числу общих тегов (в убывающем порядке) и по publish (если одинаковое кол-во тегов сначала отображаются последние посты)
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    similar_posts = Post.published.filter(tags__in=post_tags_ids).exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags', '-publish')[:4] # Получаем выборку из 4 предложенных постов
+
     return render(request,
                   'blog/post/detail.html',
                   {'post': post,
                    'comments': comments,
-                   'form': form})
+                   'form': form,
+                   'similar_posts': similar_posts})
 
 # Представление для отправки поста получая доступ к посту через его id используя функцию get_object_or_404()
 def post_share(request, post_id):
@@ -82,7 +100,7 @@ def post_share(request, post_id):
             # Текст письма с комментом (если есть) 
             message = f"Read {post.title} at {post_url}\n\n\
                 {cd['name']} comments: {cd['comments']}"
-            send_mail(subject, message, 'zxc@gmail.com', [cd['to']])
+            send_mail(subject, message, 'mail@gmail.com', [cd['to']])
 
             # Письмо отправлено
             sent = True 
