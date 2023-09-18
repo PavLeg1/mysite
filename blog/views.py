@@ -2,11 +2,12 @@ from django.shortcuts import render, get_object_or_404
 from .models import Post, Comment
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
-from .forms import EmailPostForm, CommentForm
+from .forms import EmailPostForm, CommentForm, SearchForm
 from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
 from taggit.models import Tag 
 from django.db.models import Count # Подсчет общего количества объектов
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank, TrigramSimilarity
 
 
 def post_list(request, tag_slug=None):
@@ -110,6 +111,65 @@ def post_share(request, post_id):
     return render(request, 'blog/post/share.html', {'post': post,
                                                     'form': form,
                                                     'sent': sent})
+
+
+# Вариант со взвешиванием 
+def post_search(request):
+    # Создаем экземпляр формы SearchForm
+    form = SearchForm()
+    query = None
+    results = []
+
+    # Проверка, что форма была передана на обработку
+    if 'query' in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data['query']
+            # Веса: A == 1.0, B == 0.4, C == 0.2, D == 0.1
+            # При rank__gte=0.3 результаты фильтруются чтобы отображать только те, у которых ранг выше 0.3
+            search_vector = SearchVector('title', weight = 'A') + \
+                            SearchVector('body', weight = 'B') # Через аргумент config передается язык - стемминг слов
+            # Создается объект SearchQuery  
+            search_query = SearchQuery(query, config='spanish') # Через аргумент config передается язык - удаление стоп-слов этого языка
+            # Выполняется поиск опубликованных постов по запросу
+            # По объекту SearchQuery фильтруются результаты и для упорядочивания используется SearchRank 
+            results = Post.published.annotate(search = search_vector, 
+                                              rank=SearchRank(search_vector,
+                                                              search_query)).filter(rank__gte=0.3).order_by('-rank') # Поиск со взвешиванием слов 
+
+    
+    return render(request, 'blog/post/search.html', 
+                  {'form': form,
+                   'query': query,
+                   'results': results})
+'''
+# Реализация триграммного поиска
+def post_search(request):
+    # Создаем экземпляр формы SearchForm
+    form = SearchForm()
+    query = None
+    results = []
+
+    # Проверка, что форма была передана на обработку
+    if 'query' in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data['query']
+            results = Post.published.annotate(
+                similarity=TrigramSimilarity('title', query),).filter(similarity__gt=0.1).order_by('-similarity') 
+
+    
+    return render(request, 'blog/post/search.html', 
+                  {'form': form,
+                   'query': query,
+                   'results': results})
+
+
+
+
+
+                   
+'''
 
 
 class PostListView(ListView):
