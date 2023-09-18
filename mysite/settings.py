@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'taggit',
     'django.contrib.sites',     # Дорожная карта сайта 
     'django.contrib.sitemaps',  #
+    'django.contrib.postgres',
 ]
 
 MIDDLEWARE = [
@@ -80,10 +81,12 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+'default': {
+'ENGINE': 'django.db.backends.postgresql',
+'NAME': 'blog_db',
+'USER': 'pavel',
+'PASSWORD': 'admin',
+}
 }
 
 
@@ -134,7 +137,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # EMAIL INFO
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'pvlegostaev@gmail.com'
-EMAIL_HOST_PASSWORD = 'xxxxxxxxxxxxx'
+EMAIL_HOST_PASSWORD = 'tikz ilgd vyfz qzks'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
